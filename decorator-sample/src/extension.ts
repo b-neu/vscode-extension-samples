@@ -1,80 +1,47 @@
 import * as vscode from 'vscode';
+import {Position} from "vscode";
 
-// this method is called when vs code is activated
+// This method is called when vs code is activated
 export function activate(context: vscode.ExtensionContext) {
 
-	console.log('decorator sample is activated');
-
-	// create a decorator type that we use to decorate small numbers
-	const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+	const decorationType = vscode.window.createTextEditorDecorationType({
 		borderWidth: '1px',
 		borderStyle: 'solid',
 		overviewRulerColor: 'blue',
-		overviewRulerLane: vscode.OverviewRulerLane.Right,
+		overviewRulerLane: vscode.OverviewRulerLane.Center,
+		backgroundColor: "darkred",
 		light: {
-			// this color will be used in light color themes
 			borderColor: 'darkblue'
 		},
 		dark: {
-			// this color will be used in dark color themes
 			borderColor: 'lightblue'
 		}
 	});
 
-	// create a decorator type that we use to decorate large numbers
-	const largeNumberDecorationType = vscode.window.createTextEditorDecorationType({
-		cursor: 'crosshair',
-		// use a themable color. See package.json for the declaration and default values.
-		backgroundColor: { id: 'myextension.largeNumberBackground' }
-	});
-
-	let activeEditor = vscode.window.activeTextEditor;
-	if (activeEditor) {
-		triggerUpdateDecorations();
-	}
-
-	vscode.window.onDidChangeActiveTextEditor(editor => {
-		activeEditor = editor;
-		if (editor) {
-			triggerUpdateDecorations();
-		}
+	vscode.window.onDidChangeTextEditorSelection(event => {
+		updateDecorations(event);
 	}, null, context.subscriptions);
 
-	vscode.workspace.onDidChangeTextDocument(event => {
-		if (activeEditor && event.document === activeEditor.document) {
-			triggerUpdateDecorations();
-		}
-	}, null, context.subscriptions);
-
-	let timeout : NodeJS.Timer | null = null;
-	function triggerUpdateDecorations() {
-		if (timeout) {
-			clearTimeout(timeout);
-		}
-		timeout = setTimeout(updateDecorations, 500);
-	}
-
-	function updateDecorations() {
-		if (!activeEditor) {
+	function updateDecorations(event) {
+		const activeEditor = event.textEditor;
+		const selections = event.selections;
+		if (!selections || selections.length < 1) {
 			return;
 		}
-		const regEx = /\d+/g;
-		const text = activeEditor.document.getText();
-		const smallNumbers: vscode.DecorationOptions[] = [];
-		const largeNumbers: vscode.DecorationOptions[] = [];
-		let match;
-		while (match = regEx.exec(text)) {
-			const startPos = activeEditor.document.positionAt(match.index);
-			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
-			const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: 'Number **' + match[0] + '**' };
-			if (match[0].length < 3) {
-				smallNumbers.push(decoration);
-			} else {
-				largeNumbers.push(decoration);
-			}
-		}
-		activeEditor.setDecorations(smallNumberDecorationType, smallNumbers);
-		activeEditor.setDecorations(largeNumberDecorationType, largeNumbers);
+
+		// These variables are currently unused, but are proof
+		// of concept that we can get the currently highlighted text
+		const range = selections[0].with();
+		const text = activeEditor.document.getText(range);
+		console.log(text);
+
+		// Currently hard-coding lines numbers here, but
+		// we can easily change this to whatever we want.
+		const startPos = new Position(545, 0);
+		const endPos = new Position(553, 0);
+
+		const newRange = new vscode.Range(startPos, endPos);
+		activeEditor.setDecorations(decorationType, [newRange]);
 	}
 }
 
